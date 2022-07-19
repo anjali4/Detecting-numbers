@@ -1,0 +1,130 @@
+import numpy as np
+import pandas as pd
+import matplotlib as mlt
+
+train=pd.read_csv('sample_data/mnist_train_small.csv')
+test=pd.read_csv('sample_data/mnist_test.csv')
+
+df = pd.DataFrame(train)
+
+dff = pd.DataFrame(test)
+
+##extracting y out of dataset
+Y_train=df.iloc[:,0]
+Y_test=dff.iloc[:,0]
+
+##extracting x out of dataset
+X_train=df.drop(df.columns[0], axis=1)
+X_test=dff.drop(dff.columns[0], axis=1)
+
+def dist(x, y):
+    return np.sqrt(np.sum((x-y)**2))
+
+# a list to store euclidean distance
+train_distance_list = []
+# a list to store index
+train_ind_counter = []
+# a list with all the K values
+k_values = [1,3,5,7,9]
+# creating a list of list for storing the predictions for each value of K
+train_pred_lists = [[] for _ in range(len(k_values))]
+
+# iterating through the training set
+for i in range(0,19999):
+    train_vec_one = X_train.iloc[i]
+    # iterating through the training set
+    for j in range(0,19999):
+        train_vec = X_train.iloc[j]
+        # calculate euclidean distance by calling function dist
+        euclidean_dist = dist(train_vec_one,train_vec)
+        train_distance_list.append(euclidean_dist)
+        # increment the index
+        train_ind_counter.append(j)
+    
+    # dictionary to store all the results
+    d = {'index':train_ind_counter, 'distance': train_distance_list}
+    # convert dictionary to dataframe
+    df = pd.DataFrame(d, columns = ['index', 'distance'])
+    # sort in ascending order by euclidean distance
+    df_sorted = df.sort_values(by = 'distance')
+
+    # iterate through each value of K
+    for K in range(len(k_values)):
+        index_list = list(df_sorted['index'][:k_values[K]])
+        distance = list(df_sorted['distance'][:k_values[K]])
+        res_list = [Y_train[i] for i in index_list]
+        # now get the count of the max class in result list
+        pred_value = max(res_list,key=res_list.count)
+        # storing every prediction for K in respective list
+        train_pred_lists[K].append(pred_value)
+    
+    # reinitialize the list
+    train_ind_counter = []
+    train_distance_list = []
+
+# a list to store euclidean distance
+test_distance_list = []
+# a list to store index
+test_ind_counter = []
+# creating a list of list for storing the predictions for each value of K
+test_pred_lists = [[] for _ in range(len(k_values))]
+
+# testing the knn model
+# iterating through the test set
+for i in range(0,9999):
+    test_vec = X_test.iloc[i]
+    # iterating through the training set
+    for j in range(0,19999): 
+        train_vec = X_train.iloc[j]
+        # calculate euclidean distance
+        euclidean_dist = dist(test_vec,train_vec)
+        test_distance_list.append(euclidean_dist)
+        # increment the index
+        test_ind_counter.append(j)
+    
+    # dictionary to store all the results
+    d = {'index':test_ind_counter, 'distance': test_distance_list}
+    # convert dictionary to dataframe
+    df = pd.DataFrame(d, columns = ['index', 'distance'])
+    # sort in ascending order by euclidean distance
+    df_sorted = df.sort_values(by = 'distance')
+
+    # iterate through each value of K
+    for K in range(len(k_values)):
+        index_list = list(df_sorted['index'][:k_values[K]])
+        distance = list(df_sorted['distance'][:k_values[K]])
+        res_list = [train_pred_lists[K][ind] for ind in index_list]
+        # now get the count of the max class in result list
+        pred_value = max(res_list,key=res_list.count)
+        # storing every prediction in respective list
+        test_pred_lists[K].append(pred_value)
+        
+    # # reinitialize the list   
+    test_ind_counter = []
+    test_distance_list = []
+
+# calculating results for train set
+train_pred = 0
+train_pred_result = []
+for K in range(len(k_values)):
+    # element wise comparison to find the accuracy
+    for l1,l2 in zip(train_pred_lists[K], y_train.tolist()):
+        if l1 == l2:
+            # increment when there is a match
+            train_pred += 1
+    accuracy = train_pred/19999
+    train_pred_result.append((round(accuracy*100,2)))
+    print('The train accuracy is '+str(round(accuracy*100,2))+'% for K='+str(k_values[K]))
+    train_pred = 0
+
+# calculating results for test set
+test_pred = 0
+test_pred_result = []
+for K in range(len(k_values)):
+    for l1,l2 in zip(test_pred_lists[K], Y_test.tolist()):
+        if l1 == l2:
+            test_pred += 1
+    accuracy = test_pred/9999
+    test_pred_result.append((round(accuracy*100,2)))
+    print('The test accuracy is '+str(round(accuracy*100,2))+'% for K='+str(k_values[K]))
+    test_pred = 0
