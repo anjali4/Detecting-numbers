@@ -1,0 +1,79 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+train_data = pd.read_csv('sample_data/mnist_train_small.csv')
+test_data = pd.read_csv('sample_data/mnist_test.csv')
+
+train_df.head()
+test_df.head()
+
+x1 = train_df.drop(['6'], axis = 1).values
+x0_train = np.ones((np.shape(x1)[0],1))
+x_train = np.hstack((x0_train,x1))
+
+print(x_train)
+print(x_train.shape)
+
+y1 = train_df['6']
+y_train = y1.to_numpy()
+y_train = np.vstack(y_train)
+
+print(y_train)
+print(y_train.shape)
+
+x2 = test_df.drop(index = 1942 , columns ='7').values
+x0_test = np.ones((np.shape(x2)[0],1))
+x_test = np.hstack((x0_test,x2))
+
+print(x_test)
+print(x_test.shape)
+
+y2 = test_df['7']
+y_test = y2.drop(index = 1942).values
+y_test = np.vstack(y_test)
+
+print(y_test)
+print(y_test.shape)
+
+digit = x1[0]
+digit_image = digit.reshape(28,28)
+
+#Parameter initialisation
+theta = np.zeros((x_train.shape[1], 1))
+def hypothesis(x, theta):
+    return np.dot(x, theta)
+
+#Cost function
+def cost_function(x, y, theta) :
+    h = hypothesis(x, theta)
+    sum = (h-y).T.dot(h-y)
+    return (sum / ( 2 * y.shape[0] ))[0]
+
+#Updating the parameter theta
+def update_theta( learning_rate, iterations, x, y, theta) :     
+    cost = np.zeros(iterations)
+    for i in range(iterations) : 
+        y_pred = hypothesis(x, theta)
+        diff = np.subtract(y_pred , y)
+        error =  np.dot(x.T, diff)
+        theta = theta - (learning_rate * error ) / y.shape[0]
+        cost[i] = cost_function(x, y, theta)          
+    return theta, cost
+
+#Normalizing the features
+x_train = x_train/255
+x_test = x_test/255
+
+#Applying gradient descent
+iterations = 2000
+learning_rate = 0.0355
+theta, cost = update_theta( learning_rate, iterations, x_train, y_train, theta)
+y_pred = hypothesis(x_test, theta)
+
+y_pred = np.around(y_pred)
+print(y_pred)
+
+l = np.hstack((y_test, y_pred))
+result = pd.DataFrame(l, columns = ["Actual", "Predicted"])
+print(result)
